@@ -221,7 +221,7 @@ const AppState = (() => {// for index.html state
 
     const initIndexFromStorage = () => {
         initFromStorage();
-       // console.log("init d", state)
+
         DomProxy.renderState(state);
         DomProxy.renderDiffButton(state.stack.length < 2);
         
@@ -248,12 +248,11 @@ const AppState = (() => {// for index.html state
 const HtmlFormatter = getHtmlFormatter("formatOut"); /* commons.getHtmlFormatter() */
 const PlainTextFormatter = getPlainTextFormatter();
 const TokenSource = getTokenSource(HtmlFormatter);
+HtmlFormatter.setTokenSource(TokenSource);
 
 const Parser = (() => {
     const parse = () => {
-        //console.log("parse");
         const origText = DomProxy.getOrigTextValue();
-        //console.log("parse", origText);
         
         if(origText?.length){
             let text = PreParser.preParse(origText);
@@ -264,19 +263,16 @@ const Parser = (() => {
             
             const [jsonTokens, jsonErrs] = JsonParser.parse(text);
             
-//            console.log("jsonErrs 1", jsonErrs);
-//            console.log(jsonTokens);
+            // JsonTokens in, FormatTokens out
             TokenSource.setTokens(jsonTokens);
-
-            let tokens = TokenSource.getTokens();
+            const formatTokens = TokenSource.getTokens();
 
             DomProxy.renderObjSize(
-                tokens.reduce((acc, t) => t.isValue ? ++acc : acc, 0)
+                formatTokens.reduce((acc, t) => t.isValue ? ++acc : acc, 0)
             );
 
-            HtmlFormatter.drawFormattedHtml(tokens, jsonErrs, PreParser.getWarnings());
+            HtmlFormatter.drawFormattedHtml(formatTokens, jsonErrs, PreParser.getWarnings());
         }
-        //console.log(testData);
     };
     
     const debounceParse = (() => {
@@ -399,4 +395,61 @@ const newDiff = () => {
     AppState.newDiff();
     window.open("diff.html", '_blank');
 };
+
+/*
+TEST VALUES
+
+DIFF
+{firstName:Bill,lastName:Burns,age:61,dob:1959:07:04,children:[Bill,Bueford,Bart,Benny],jobs:[computerscientist,musicproducer,respiratorytherapist]}
+{firstName:Bill,lastName:Burns,age:62,dob:1958:07:04,children:[Billy,Bueford,Bart,Benny],jobs:[computerscientist,musicproducer,doctor]}
+{"firstName":"Bill","lastName":"Burns","age":62,"dob":"1958:07:04",favoriteColor:blue,favoriteMusic:opera,"children":["Billy","Bueford","Bart","Benji"],"jobs":["computerscientist","musicproducer","respiratorytherapist"]}
+{thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},{"value":true,"onclick":"CloseDoc()"}]}}}
+{thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":true,"onclick":"doIt()"},{"value":-00033.6,"onclick":"OpenDoc()"},{"value":false,"onclick":"CloseDoc()"}]}}}
+
+TEST DATA SHORT:
+    {"fields":[1,2,3],"thing1":{"innerThing":23},"thing2":"mopey"}
+
+TEST DATA LONG:
+    {"menu": {"id": "file","value": "File","popup": {"menuitem": [{"value": "New", 
+    "onclick": "CreateNewDoc()"},{"value": "Open", "onclick": "OpenDoc()"},{"value": 
+    "Close", "onclick": "CloseDoc()"} ]}}}
+
+ESCAPED
+    {\"fields\":[1,2,3],\"thing1\":{\"innerThing\":23},\"thing2\":\"mopey\"}
+
+UNNECESSARY QUOTES
+    "{"fields":[1,2,3],"thing1":{"innerThing":23},"thing2":"mopey"}";
+
+ESCAPED WITH UNNECESSARY QUOTES
+    "{\"fields\":[1,2,3],\"thing1\":{\"innerThing\":23},\"thing2\":\"mopey\"}";
+
+TAB AND NEWLINE (Due to HTML, multi-space only shows up when format copied to clipboard)
+    {a:		b,c    :d 
+    , e: "in	quotes 		tabs"}
+
+BOOLEAN, NUMBER, UNDEFINED, NULL
+    {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},{"value":true,"onclick":"CloseDoc()"}]}}}
+
+DATES
+    {date:"2025-01-05T02:30:14.321Z",date2:2024-01-04T02:30:14Z,date3:2025-01-05,text:someText}
+
+INNER QUOTES NOT SUPPORTED!
+    ["He said, \"Hello!\""]
+
+JAVA MAP
+    {a=first,b=second}
+
+JAVA BSON DOCUMENT
+    Document{{key1=value1, key2=value2, key3="keep the = sign"}} 
+
+JAVA BSON DOCUMENT IN ARRAY
+    [a, b, Document{{name=John Doe, age=30, city=New York}},d]
+
+JAVA TOSTRING NOTATION IN ARRAY
+    [a, b, ClassName(key1=value1, key2=value2, key3="keep the = sign"), d]
+
+IGNORE JAVA MAP-LIKE MISTAKE
+    [objectName{key1:value1, key2:value2, key3:"keep the = sign"}]
+
+*/
 
