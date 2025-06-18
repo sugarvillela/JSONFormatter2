@@ -1,41 +1,41 @@
 const TAB_WIDTH = 4;
 
-const StorageBase = (() => {
+const Storage = (() => {
     /* interface state {pointer: number; stack: string[]} */
     
     const APP_KEY = "JSONFORMATTER_";
-    const POINTER_KEY = "POINTER";
+    const POINTER_KEY = "JSONFORMATTER_POINTER";
     
-    const savePointer = (key, state) => {
+    const savePointer = (state) => {
         const {pointer, stack} = state;
         localStorage.setItem(
-            `${key}${POINTER_KEY}`, 
+            POINTER_KEY, 
             `[${pointer},${stack.length}]`
         );
     };
-    /* private */ const getPointer = (key) => {
-        const item = localStorage.getItem(`${key}${POINTER_KEY}`);
+    /* private */ const getPointer = () => {
+        const item = localStorage.getItem(POINTER_KEY);
         //console.log("init b", item)
         return item ? JSON.parse(item) : [0, 0];
     };
     
-    const saveState = (key, state) => {
+    const saveState = (state) => {
         const {pointer, stack} = state;
         localStorage.setItem(
-            `${key}${POINTER_KEY}`, 
+            POINTER_KEY, 
             `[${pointer},${stack.length}]`
         );
         stack.forEach((d, i) => 
-            localStorage.setItem(`${key}${i}`, d)
+            localStorage.setItem(`${APP_KEY}${i}`, d)
         );
     };
 
-    const getState = (key) => {
-        const [pointer, length] = getPointer(key);
+    const getState = () => {
+        const [pointer, length] = getPointer(POINTER_KEY);
         const stack = [];
         
         for(let i = 0; i < length; i++){
-            const item = localStorage.getItem(`${key}${i}`);
+            const item = localStorage.getItem(`${APP_KEY}${i}`);
             //console.log("init c", item)
             item && stack.push(item);
         }
@@ -44,72 +44,7 @@ const StorageBase = (() => {
     };
     
     const clear = (key) => {
-        /* Don't use localStorage.clear() */
-        const [pointer, length] = getPointer(key);
-        
-        if(length){
-            localStorage.removeItem(`${key}${POINTER_KEY}`);
-            for(let i = 0; i < length; i++){
-                localStorage.removeItem(`${key}${i}`);
-            }
-        }
-    };
-    
-    return {
-        savePointer: (key, state) => savePointer(key, state),
-        saveState: (key, state) => saveState(key, state),
-        getState: (key) => getState(key),
-        clear: (key) => clear(key)
-    };
-})();
-
-const Storage = (() => {   
-    const APP_KEY = "JSONFORMATTER_";
-    
-    const savePointer = (state) => {
-        StorageBase.savePointer(APP_KEY, state);
-    };
-    
-    const saveState = (state) => {
-        StorageBase.saveState(APP_KEY, state);
-    };
-
-    const getState = () => {       
-        return StorageBase.getState(APP_KEY);
-    };
-    
-    const clear = () => {
-        StorageBase.clear(APP_KEY);
-    };
-    
-    return {
-        savePointer: (state) => savePointer(state),
-        saveState: (state) => saveState(state),
-        getState: () => getState(),
-        clear: () => clear()
-    };
-})();
-
-/* Temp storage for opening new diff*/
-const StorageDiff = (() => {   
-    const DIFF_KEY = "JSONDIFF_";
-    
-    const savePointer = (state) => {
-        StorageBase.savePointer(DIFF_KEY, state);
-    };
-    
-    const saveState = (state) => {
-        StorageBase.saveState(DIFF_KEY, state);
-    };
-
-    const getState = () => {
-        const state = StorageBase.getState(DIFF_KEY);
-        StorageBase.clear(DIFF_KEY);
-        return state;
-    };
-    
-    const clear = () => {
-        StorageBase.clear(DIFF_KEY);
+        localStorage.clear();
     };
     
     return {
@@ -365,7 +300,7 @@ const TokenGen = (() => {
     };
     
     const genNullToken = () => {
-        return genFormatToken(undefined, {tokType: VAL_DIFF, text: "_", id: 0});
+        return genFormatToken(undefined, {tokType: VAL_DIFF, text: " ", id: 0});
     };
 //    
     const genDiffToken = (replaceToken) => {
@@ -382,6 +317,8 @@ const TokenGen = (() => {
 })();
 
 const getHtmlFormatter = (formatDivId) => {  
+    let tokenSource;
+    
     const tabHtml = (indent) => {
         return (indent > 0)? '&nbsp;'.repeat(indent*TAB_WIDTH) : "";
     };
@@ -404,21 +341,23 @@ const getHtmlFormatter = (formatDivId) => {
     };
     
     const linkView = (id) => {
-        if(id){
-            // link
-            TokenSource.getTokens().forEach(t => {
-                t.domObject.setAttribute(
-                    "class", 
-                    t.id === id? "highlight" : t.className
-                );
-            });
-        }
-        else {
-            // unlink
-            TokenSource.getTokens().forEach(t => {
-                t.domObject.setAttribute("class", t.className);
-                //t.domObject.classList.add(t.className);
-            });
+        if(tokenSource){
+            if(id){
+                // link
+                tokenSource.getTokens().forEach(t => {
+                    t.domObject.setAttribute(
+                        "class", 
+                        t.id === id? "highlight" : t.className
+                    );
+                });
+            }
+            else {
+                // unlink
+                tokenSource.getTokens().forEach(t => {
+                    t.domObject.setAttribute("class", t.className);
+                    //t.domObject.classList.add(t.className);
+                });
+            }
         }
     };
     
@@ -477,7 +416,9 @@ const getHtmlFormatter = (formatDivId) => {
     
     return {
         drawFormattedHtml: (tokens, jsonErrs, warnings) => drawFormattedHtml(tokens, jsonErrs, warnings),
-        linkView: (id) => linkView(id)
+        linkView: (id) => linkView(id),
+        setTokenSource: (setSource) => tokenSource = setSource,
+        appendWarn: (domParent, text) => appendWarn(domParent, text)
     };
 };
 
@@ -520,56 +461,8 @@ const getPlainTextFormatter = () => {
         return tokens.map(t => t.formatted);
     };
     
-    /* private */ const fnv1a32 = (str) => {
-        let hash = 2166136261; // FNV_prime_32
-        for (let i = 0; i < str.length; i++) {
-            hash ^= str.charCodeAt(i);
-            hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
-        }
-        return hash;
-    };
-    
-    const toDiffRows = (tokens) => {
-        setIndents(tokens);
-        /* interface DiffRow {
-         *   tokens: FormatToken[];
-         *   value: string;
-         *   hash: number;
-         * } */
-        
-        const rowProto = () => ({
-            tokens: [],
-            value: "",
-            hash: 0
-        });
-        
-        let isEndline = false;
-        let diffRows = [];
-        let row = rowProto();
-
-        tokens.forEach(t => {          
-            if(t.checkEndline && isEndline){
-                if(row.tokens.length){
-                    diffRows.push(row);
-                    
-                }
-                row = rowProto();
-            }
-            row.tokens.push(t);
-
-            isEndline = t.isEndline;
-        });
-        
-        diffRows.forEach(row => {
-            row.value = row.tokens.map(t => t.value).join("");
-            row.hash = fnv1a32(row.value);
-        });
-        return diffRows;
-    };
-    
     return {
-        formattedToArray: (tokens) => formattedToArray(tokens),
-        toDiffRows: (tokens) => toDiffRows(tokens)
+        formattedToArray: (tokens) => formattedToArray(tokens)
     };
 };
 
@@ -589,5 +482,3 @@ const getTokenSource = (htmlFormatter) => {
         //formattedToArray: () => tokens.map(t => t.formatted)
     };
 };
-
-
