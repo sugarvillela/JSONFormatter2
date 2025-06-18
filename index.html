@@ -1,0 +1,67 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>JSON Formatter</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/index.css"  />
+    </head>
+    <body>
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-xs-2">
+                <h4 title="Formatter/Cleaner with Local State" >JSON Formatter</h4>
+            </div>
+            <div class="col-xs-2">
+                <input type="submit" title="Clear Window" value="&#128465" onclick="clearFields()"/>
+                <input type="submit" title="Shrink Window" value="-" onclick="toggleHide()" id="buttonHide" />
+                <input type="submit" title="Slide Formatted" value="&uarr;" onclick="slideFormatted()" />
+                <input type="submit" title="Clean" value="&#x23fb;" onclick="togglePowerButton()" id="buttonPower" />
+                <div class="smallText" title="Object Size" id="objSize" ></div>
+            </div>
+            <div class="col-xs-4">
+                <input type="submit" title="Save" value="&#128190;" onclick="stateSave()" id="buttonSave" />
+                <input type="submit" title="Push" value="+" onclick="statePush()"/>
+                <input type="submit" title="Back" value="&lsaquo;" onclick="stateBack()"/>
+                <input type="submit" title="Forward" value="&rsaquo;" onclick="stateForward()"/>
+                <input type="submit" title="Top" value="&rsaquo;&rsaquo;" onclick="stateTop()"/>
+                <input type="submit" title="Pop" value="*" onclick="statePop()"/>
+                <input type="submit" title="Clear State" value="&#128465" onclick="clearState()"/>
+                <div class="smallText" title="Current Position" id="pointerPos" ></div>
+            </div>
+            <div class="col-xs-4">
+                <input type="submit" title="Copy Original" value="&#128203;Orig" onclick="origToClipboard()"/>
+                <input type="submit" title="Copy Formatted" value="&#128203;Format" onclick="formattedToClipboard()"/>
+                <input type="submit" title="Copy with Quotes Escaped" value="&#128203;Escape" onclick="escapedToClipboard()"/>
+                <input type="submit" title="Diff items in stack" value="&nearr;Diff" id="buttonDiff" disabled onclick="newDiff()"/>
+            </div>
+          </div>
+        </div>
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-xs-12">
+              <div class="form-group ">
+                <textarea class="form-control m20x p20x" id="origText" rows="10" cols="80" 
+                    onkeyup="Parser.onExternalChange()" placeholder="Paste Here..."
+                ></textarea>
+              </div>
+            </div>  
+          </div>
+        </div>
+        <div class="container-fluid">
+          <div class="row">
+            <div class="displayArea" id="formatOut"></div>
+          </div>
+        </div>
+        <script src="js/jsonParser.js"></script>
+        <script src="js/common.js"></script>
+        <script src="js/index.js"></script>
+        <script>
+            AppState.initIndexFromStorage();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,12 @@
+.dropdown {
+    width: 100% !important;
+}
+
+.diffToken {
+
+    background-color: darksalmon;
+    min-width: 0;
+    border: none;
+    display: inline;
+}
+
