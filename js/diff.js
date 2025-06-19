@@ -290,13 +290,12 @@ const SelectUtil = (() => {
 })();
 
 const DiffState = (() => {// for diff.html state
-    /* import common.StorageDiff */
+    /* import common.Storage */
     /* interface {pointer: number; stack: string[]} */
     
     const state = {pointer: 0, stack: []};
       
     const initFromStorage = () => {
-        //console.log("init a")
         let {pointer, stack} = Storage.getState();
         if(stack.length){
             pointer = Math.min(pointer, stack.length - 1);
