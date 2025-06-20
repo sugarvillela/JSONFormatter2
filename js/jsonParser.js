@@ -1,7 +1,15 @@
+"use strict";
+
 const EOI = false;
-const ERR_EARLY1 = "end of JSON before end of input";
+
+const BAD_OPENER = "expect { or [";
+const ERR_EARLY1 = "expect a single root object or array";
 const ERR_EARLY2 = "unexpected end of input";
-const ERR_MULTI_ROOT = "expected a single root object or array";
+const ERR_OPEN_QUOTE = "unclosed quote";
+const ERR_ON_KEY = "expect a key here";
+const ERR_AFTER_KEY = "expect colon after key";
+const ERR_ON_VAL = "expect a value here";
+const ERR_AFTER_VAL = "expect comma or closing symbol after value";
 const POS_INFO_LEN = 20; // How much of the input string to display with error
 
 const OBJ_OPEN = "OBJ_OPEN";
@@ -67,7 +75,7 @@ const JsonParser = (() => {
 
         return {
             reset: () => reset(),
-            put: (posInfo, errInfo) => errs.push(`At '${posInfo}'', ${errInfo}`),
+            put: (posInfo, errInfo) => errs.push(`At ${posInfo}: ${errInfo}`),
             setHalt: () => halt = true,
             isHalt: () => halt || errs.length,
             getErrs: () => errs,
@@ -90,8 +98,6 @@ const JsonParser = (() => {
         };
 
         const getPosInfo = () => {
-            
-            let posText;
             if(text.length < POS_INFO_LEN){
                 return text;
             }
@@ -114,8 +120,10 @@ const JsonParser = (() => {
                 let acc = 0;
                 let sliceStart = 0, sliceEnd = tok.length - 1;
                 let haveSliceStart = false;
+                
                 for(let j = 0; j < tok.length; j++){
                     acc += tok[j].length;
+                    
                     if(start < acc && !haveSliceStart){
                         sliceStart = j;
                         haveSliceStart = true;
@@ -125,9 +133,8 @@ const JsonParser = (() => {
                         break;
                     }
                 }
-                //console.log(text.length, i, start, end, sliceStart, sliceEnd)
+                
                 return tok.slice(sliceStart, sliceEnd).join("");
-                //console.log(posText + " length", posText.length);
             }
         };
 
@@ -236,8 +243,7 @@ const JsonParser = (() => {
             // Base is a non-rendering nesting obj
             let roots = 0;
             const assertSingleRoot = () => {
-                //console.log("assertSingleRoot", roots)
-                roots === 1 || TextItr.setErr(ERR_MULTI_ROOT);
+                roots === 1 || TextItr.setErr(ERR_EARLY1);
             };
 
             return {
@@ -245,144 +251,38 @@ const JsonParser = (() => {
                     const c = TextItr.peek();
                     switch(c){
                         case "{":
-                            //console.log("push obj");
                             roots++;
                             assertSingleRoot();
                             PStack.push(getObj());
                             break;
                         case "[":
-                            //console.log("push arr");
                             roots++;
                             assertSingleRoot();
                             PStack.push(getArr());
                             break;
                         default:
-                            // console.log("pop base", c, test.length, TextItr.iCurr());
                             if(roots){
-                                //assertSingleRoot();
                                 TextItr.assertEOI(c);
                             }
                             else {
-                                TextItr.setErr("Expected '{' or '['");
+                                TextItr.setErr(BAD_OPENER);
                             }
                             Err.setHalt();
                     }
                 },
                 onPush: () => {
-                    // console.log("base onPush");
                     TextItr.skip();// skip '{'
                 },
-                onPop: () => {
-                   //console.log("base onPop");
-
-                },
-                name: () => "base"
+                onPop: () => {}
             };
         };
         const getObj = () => {
-            const id = getUq();
-
             // Object is a rendering nesting obj
             const errs = [
-                "Expected a key here",
-                "Expected a colon here",
-                "Expected a value here",
-                "Expected a comma or '}' here",
-                "Bad object structure"
-            ];
-
-            let step = 0;
-            const assertStep = (n, c) => {
-                const r = (n === step) || 
-                        (c !== false && TextItr.setErr(`${errs[step]}, found ${c}`)) || 
-                        TextItr.setErr(`${errs[step]}`);
-                step++;
-                return r;
-            };
-
-            return {
-                read: () => {
-                    const c = TextItr.peek();
-                    TextItr.assertNotEOI(c);
-                    // console.log(`obj step ${step}: '${c}'`);
-                    switch(c){
-                        case ":":
-                            if(assertStep(1, c)){
-                                // console.log("push colon");
-                                PStack.push(getSelfPop(COLON, c));
-                            }
-                            break;
-                        case ",":
-                            if(step === 2) {// allow one empty value
-                                // console.log("push empty value");
-                                PStack.push(getSelfPop(VAL_TEXT, '""'));
-                                step++;
-                            }
-                            if(assertStep(3, c)){
-                                // console.log("push comma");
-                                PStack.push(getSelfPop(COMMA, c));
-                                step = 0;
-                            }
-                            break;
-                        case "}":
-                            if(step === 2) {// allow one empty value
-                                // console.log("push empty value");
-                                PStack.push(getSelfPop(VAL_TEXT, '""'));
-                                step++;
-                            }
-                            if(assertStep(3, c)){
-                                // console.log("pop obj");
-                                PStack.pop();
-                            }
-                            break;
-                        case "{":
-                            if(assertStep(2, c)){
-                                // console.log("push obj");
-                                PStack.push(getObj());
-                            }
-                            break;
-                        case "[":
-                            if(assertStep(2, c)){
-                                // console.log("push arr");
-                                PStack.push(getArr());
-                            }
-                            break;
-                        default:
-                            if(step === 0){
-                                // console.log("push acc");
-                                step++;
-                                PStack.push(getAcc(KEY_TEXT, [":"]));// key
-                            }
-                            else if(step === 2) {
-                                // console.log("push acc");
-                                step++;
-                                PStack.push(getAcc(VAL_TBD, [",","}"]));// value
-                            }
-//                            else {
-//                                TextItr.setErr("?");
-//                            }
-                    }
-                },
-                onPush: () => {
-                    // console.log("obj onPush");
-                    TextItr.skip();// skip '{' push char
-                    AccTokens.push(OBJ_OPEN, "{", id);
-                },
-                onPop: () => {
-                    // console.log("obj onPop");
-                    TextItr.skip();// skip '}'
-                    AccTokens.push(OBJ_CLOSE, "}", id);
-                },
-                name: () => "obj"
-            };
-        };
-        const getArr = () => {
-            const id = getUq();
-
-            // Array is a rendering nesting obj
-            const errs = [
-                "Expected a value here",
-                "Expected a comma or ']' here",
+                ERR_ON_KEY,
+                ERR_AFTER_KEY,
+                ERR_ON_VAL,
+                ERR_AFTER_VAL,
                 "Bad object structure"
             ];
 
@@ -395,82 +295,173 @@ const JsonParser = (() => {
                 return r;
             };
             
+            const assertNotEOI = (c) => {
+                if(c === EOI){
+                    TextItr.setErr(`${errs[step]}`);
+                }
+            };
+            
+            const id = getUq();
+            let haveContent = false;
+
+            return {
+                read: () => {
+                    const c = TextItr.peek();
+                    assertNotEOI(c);
+                    
+                    switch(c){
+                        case ":":
+                            if(assertStep(1, c)){
+                                PStack.push(getSelfPop(COLON, c));
+                            }
+                            break;
+                        case ",":
+                            if(step === 2) {// allow one empty value
+                                PStack.push(getSelfPop(VAL_TEXT, '""'));
+                                step++;
+                            }
+                            if(assertStep(3, c)){
+                                PStack.push(getSelfPop(COMMA, c));
+                                step = 0;
+                            }
+                            break;
+                        case "}":
+                            if(step === 2) {// allow one empty value
+                                PStack.push(getSelfPop(VAL_TEXT, '""'));
+                                step++;
+                            }
+                            if(!haveContent || assertStep(3, c)){
+                                PStack.pop();
+                            }
+                            break;
+                        case "{":
+                            if(assertStep(2, c)){
+                                PStack.push(getObj());
+                            }
+                            break;
+                        case "[":
+                            if(assertStep(2, c)){
+                                PStack.push(getArr());
+                            }
+                            break;
+                        default:
+                            haveContent = true;
+                            if(step === 0){
+                                step++;
+                                PStack.push(getAcc(KEY_TEXT, [":"]));// key
+                            }
+                            else if(step === 2) {                               
+                                step++;
+                                PStack.push(getAcc(VAL_TBD, [",","}"]));// value
+                            }
+                    }
+                },
+                onPush: () => {
+                    TextItr.skip();// skip '{' push char
+                    AccTokens.push(OBJ_OPEN, "{", id);
+                },
+                onPop: () => {
+                    TextItr.skip();// skip '}'
+                    AccTokens.push(OBJ_CLOSE, "}", id);
+                }
+            };
+        };
+        const getArr = () => {
+            const id = getUq();
+
+            // Array is a rendering nesting obj
+            const errs = [
+                ERR_ON_VAL,
+                ERR_AFTER_VAL,
+                "Bad object structure"
+            ];
+
+            let step = 0;
+            const assertStep = (n, c) => {
+                const r = (n === step) || 
+                        (c !== false && TextItr.setErr(`${errs[step]}, found ${c}`)) || 
+                        TextItr.setErr(`${errs[step]}`);
+                step++;
+                return r;
+            };
+            
+            const assertNotEOI = (c) => {
+                if(c === EOI){
+                    TextItr.setErr(`${errs[step]}`);
+                }
+            };
+            
             let haveValue = false;
 
             return {
                 read: () => {
-                    //step = step%2;
                     const c = TextItr.peek();
-                    TextItr.assertNotEOI(c);
-                    // console.log(`arr step ${step}: '${c}'`);
+                    assertNotEOI(c);
+
                     switch(c){
                         case ",":
-                            if(step === 0) {// allow empty values
-                                // console.log("push empty value");
-                                PStack.push(getSelfPop(VAL_TEXT, '""'));
-                                step++;
-                                haveValue = true
-                            }
                             if(assertStep(1, c)){
-                                // console.log("push comma");
                                 PStack.push(getSelfPop(COMMA, c));
                                 step = 0;
                             }
                             break;
                         case "]":
-                            if(haveValue && step === 0) {// allow empty array or empty value after comma
-                                // console.log("push empty value");
-                                PStack.push(getSelfPop(VAL_TEXT, '""'));
+                            if(!haveValue || assertStep(1, c)){
+                                PStack.pop();
                             }
-                            PStack.pop();
                             break;
                         case "{":
                             if(assertStep(0, c)){
-                                // console.log("push obj");
                                 PStack.push(getObj());
                             }
                             break;
                         case "[":
                             if(assertStep(0, c)){
-                                // console.log("push arr");
                                 PStack.push(getArr());
                             }
                             break;
                         default:
                             if(assertStep(0, c)){
-                                // console.log("push acc");
+                                haveValue = true;
                                 PStack.push(getAcc(VAL_TBD, [",","]"]));// value
                             }
                     }
                 },
                 onPush: () => {
-                    // console.log("arr onPush");
                     TextItr.skip();// skip '[' push char
                     AccTokens.push(ARR_OPEN, "[", id);
                 },
                 onPop: () => {
-                    // console.log("arr onPop");
                     TextItr.skip();// skip ']'
                     AccTokens.push(ARR_CLOSE, "]", id);
                 }
-                ,
-                name: () => "arr"
             };
         };
         const getAcc = (tokTypeTBD, popChars) => {
             // acc is a rendering, flat text accumulator for key or value
             let quoted = false;
             let iStart = 0, iEnd = 0;
+            
+            const assertNotEOI = (c) => {
+                if(c === EOI){
+                    if(quoted){
+                        TextItr.setErr(ERR_OPEN_QUOTE);
+                    }
+                    else if(tokTypeTBD === KEY_TEXT){
+                        TextItr.setErr(ERR_AFTER_KEY);
+                    }
+                    else {
+                        TextItr.setErr(ERR_AFTER_VAL);
+                    }
+                }
+            };
 
             return {
                 read: () => {
                     const c = TextItr.peek();
-                    TextItr.assertNotEOI(c);
-
-                    // console.log("acc:", c);
+                    assertNotEOI(c);
 
                     if(!quoted && popChars.includes(c)){
-                        // console.log("acc self pop", popChars);
                         PStack.pop();// pop self
                     }
                     else {
@@ -481,7 +472,6 @@ const JsonParser = (() => {
                     }
                 },
                 onPush: () => {
-                    // console.log("acc onPush", popChars);
                     iStart = TextItr.iCurr();
                 },
                 onPop: () => {
@@ -492,28 +482,21 @@ const JsonParser = (() => {
                         JsonTextUtil.handleKey : JsonTextUtil.handleValue;
 
                     const [tokType, text] = handler(substr);
-                    // console.log("acc onPop", tokType, text);
                     AccTokens.push(tokType, text, 0);
-                },
-                name: () => "acc: " + tokTypeTBD
+                }
             };
         };
         const getSelfPop = (tokType, c) => {  
             // connector is a rendering, flat, self-popping obj for colon or comma
             return {
-                read: () => {
-                    // console.log("connector should never be read");
-                },
+                read: () => {},
                 onPush: () => {
-                    // console.log("onPush", c);
                     TextItr.skip();// skip c
                     PStack.pop();// pop self always
                 },
                 onPop: () => {
-                    // console.log("onPop", c);
                     AccTokens.push(tokType, c, 0);
-                },
-                name: () => `selfPop: ${tokType} ${c}`
+                }
             };
         };
 
@@ -531,7 +514,6 @@ const JsonParser = (() => {
 
         const top = () => {
             if(stack.length){
-                //console.log("top", stack[stack.length - 1].name());
                 return stack[stack.length - 1];
             }
             else {
@@ -572,56 +554,14 @@ const JsonParser = (() => {
         while(!Err.isHalt()){
             PStack.read();
             if(++i > runaway){
-                TextItr.setErr("runaway");
+                TextItr.setErr("The parser failed to halt");
             }
         }
-        //while(!Err.isHalt());
-        //Err.disp();
-        //AccTokens.dispTokens();
-        //console.log(AccTokens.getTokens());
         
         return [AccTokens.getTokens(), Err.getErrs()];
     };
-    
-//    const test = '{thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},{"value":true,"onclick":"CloseDoc()"}]}}}';//'{abc:def,ghi:[1,2,3],jkl:"true"}';
-//    TextItr.setText(test);
-//    for(let i = 0; i < 50; i++){
-//        TextItr.skip();
-//    }
-//    TextItr.setErr("err");
     
     return {
         parse: (text) => parse(text)
     };
 })();
-
-//const test = '{abc:25-07-04T16:20:01.123,ghi:[1,2,3],jkl:"true"}';
-
-//JsonParser.parse();
-
-//const classifyValues = [
-//    '123',
-//    '2025-01-05T02:30:14.321Z',
-//    '"2025-01-05T02:30:14.321Z"',
-//    '2025-01-05',
-//    'true',
-//    'false',
-//    '\\"true\\"',
-//    '"false"',
-//    'undefined',
-//    'null',
-//    '-33.2',
-//    'hello',
-//    '"hello"'
-//];
-//classifyValues.forEach(v => {
-//    const pair = JsonTextUtil.handleValue(v);
-//    console.log(pair);
-//});
-
-
-
-
-
-
-
