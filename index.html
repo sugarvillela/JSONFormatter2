@@ -18,7 +18,7 @@
             </div>
             <div class="col-xs-2">
                 <input type="submit" title="Clear Window" value="&#128465" onclick="clearFields()"/>
-                <input type="submit" title="Shrink Window" value="-" onclick="toggleHide()" id="buttonHide" />
+                <input type="submit" title="Window Size" value="+" onclick="toggleHide()" id="buttonWinSize" />
                 <input type="submit" title="Slide Formatted" value="&uarr;" onclick="slideFormatted()" />
                 <input type="submit" title="Clean" value="&#x23fb;" onclick="togglePowerButton()" id="buttonPower" />
                 <div class="smallText" title="Object Size" id="objSize" ></div>
@@ -45,7 +45,7 @@
           <div class="row">
             <div class="col-xs-12">
               <div class="form-group ">
-                <textarea class="form-control m20x p20x" id="origText" rows="10" cols="80" 
+                <textarea class="form-control m20x p20x" id="origText" rows="8" cols="80" 
                     onkeyup="Parser.onExternalChange()" placeholder="Paste Here..."
                 ></textarea>
               </div>
