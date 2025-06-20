@@ -97,19 +97,34 @@ const PreParser = (() => {
     const OuterQuotes = (() => {
         const r1 = /";$/;
         const r2 = /"$/;
-
-        return {
-            fix: (text) => {
-                if(text.length && text[0] === '"'){
-                    if(r1.exec(text)){
-                        text = text.substring(1, text.length - 2);
-                    }
-                    else if(r2.exec(text)){
-                        text = text.substring(1, text.length - 1);
-                    }
+        const r3 = /^[a-zA-Z0-9 =]+"/;
+        
+        const fix = (text) => {
+            if(text.length && text[0] === '"'){
+                if(r1.exec(text)){
+                    text = text.substring(1, text.length - 2);
+                }
+                else if(r2.exec(text)){
+                    text = text.substring(1, text.length - 1);
                 }
                 return text.trim();
             }
+            else {
+                const match = r3.exec(text);
+                if(match){
+                    console.log(match);
+                    const len = match[0].length - 1;
+                    console.log("len", len);
+                    const trimFront = text.substring(len);
+                    console.log(trimFront);
+                    return fix(trimFront);
+                }
+            }
+            return text;
+        };
+
+        return {
+            fix: (text) => fix(text)
         };
     })();
 
@@ -451,7 +466,6 @@ const getPlainTextFormatter = () => {
         let isEndline = false;
 
         tokens.forEach(t => {
-            t = tokens[i];
             t.formatted = (t.checkEndline && isEndline)?
                 `\n${tabSpace(t.indent)}${t.value}` :
                 t.value;
