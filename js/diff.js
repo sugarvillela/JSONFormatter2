@@ -25,7 +25,7 @@ const DiffRow = (() => {
         
         row.hashSymb = fnv1a32(
             row.toksRow
-                .filter(t => !t.isValue && !t.isKey)
+                .filter(t => !t.isValue && !t.isKey && t.value !== ",")
                 .map(t => t.value)
                 .join("")  
         );
@@ -83,93 +83,159 @@ const DiffRow = (() => {
 })();
 
 const DiffGen = (() => {
+    const HASH_EMPTY = 2166136261;
+    
+    let left = [];
+    let right = [];
+    let destL = [];
+    let destR = [];
+    
+    const nullRow = {
+        toksRow: [TokenGen.genNullToken()]
+    };
+    
     const addErrClass = (tokens) => {
         tokens.forEach(t => t.className = "diffToken");
     };
+    
+    const equalNonEmptyHashes = (a, b) => {
+        return a !== HASH_EMPTY && a === b
+    };
+    
+    const equal = (i, j) => {
+        return (
+            i < left.length && 
+            j < right.length && 
+            left[i].hashRow === right[j].hashRow
+        );
+    };
 
-    const similar = (rowL, rowR) => {
-        if(rowL.hashRow === rowR.hashRow){
-            return true;
-        }
-        
-        if(rowL.hashSymb !== rowR.hashSymb){
-            return false;
-        }
-        
-        if(rowL.hashKey === rowR.hashKey){
-            if(rowL.hashVal !== rowR.hashVal){
-                addErrClass(rowL.toksVals);
-                addErrClass(rowR.toksVals);
+    const similar = (i, j) => { 
+        if(i < left.length && j < right.length){
+            if(left[i].hashRow === right[j].hashRow){
+                return true;
             }
-            return true;
-        }
-        
-        if(rowL.hashVal === rowR.hashVal){
-            if(rowL.hashKey !== rowR.hashKey){
-                addErrClass(rowL.toksKeys);
-                addErrClass(rowR.toksKeys);
+            
+            if(left[i].hashSymb !== right[j].hashSymb){
+                return false;
             }
-            return true;
+
+            if(equalNonEmptyHashes(left[i].hashKey, right[j].hashKey)){
+                if(left[i].hashVal !== right[j].hashVal){
+                    addErrClass(left[i].toksVals);
+                    addErrClass(right[j].toksVals);
+                }
+                return true;
+            }
+
+            if(equalNonEmptyHashes(left[i].hashVal, right[j].hashVal)){
+                if(left[i].hashKey !== right[j].hashKey){
+                    addErrClass(left[i].toksKeys);
+                    addErrClass(right[j].toksKeys);
+                }
+                return true;
+            }
         }
 
         return false;
     };
 
-    const find = (list, rowL, k) => {
-        if(k < list.length){
-            return similar(rowL, list[k]);
+    const lookAheadR = (i, j) => {
+        for(let k = j + 1; k < right.length; k++){
+            if(similar(i, k)){
+                return true;
+            }
         }
+        
         return false;
     };
-
-    const lookAhead = (list, rowL, start) => {
-        for(let k = start; k < list.length; k++){
-            if(similar(rowL, list[k])){
+    
+    const lookAheadL = (i, j) => {
+        for(let k = i + 1; k < left.length; k++){
+            if(similar(k, j)){
                 return true;
             }
         }
         return false;
     };
     
-    const nullRow = {
-        toksRow: [TokenGen.genNullToken()]
+    const pushL = (i) => {
+        if(i < left.length){
+            destL.push(left[i]);
+        }
     };
-    
-    let l = [];
-    let r = [];
+    const pushR = (j) => {
+        if(j < right.length){
+            destR.push(right[j]);
+        }
+    };
+    const skipL = (i) => {
+        destL.push(nullRow);
+    };
+    const skipR = (j) => {
+        destR.push(nullRow);
+    };
+    const pushErrL = (i) => {
+        if(i < left.length){
+            addErrClass(left[i].toksRow);
+            destL.push(left[i]);
+        }
+    };
+    const pushErrR = (j) => {
+        if(j < right.length){
+            addErrClass(right[j].toksRow);
+            destR.push(right[j]);
+        }
+    };
 
     const gen = (diffRows) => {
-        l = diffRows[0];
-        r = diffRows[1];
+        left = diffRows[0];
+        right = diffRows[1];
+        destL = [];
+        destR = [];
         
-        const destL = [];
-        const destR = [];
         let i = 0, j = 0;
 
-        while (i < l.length){
-            let rowL = l[i];
-
-            if(find(r, rowL, j)){
-                destL.push(rowL);//merge l and r elements
-                destR.push(r[j]);//merge l and r elements
+        while (i < left.length){
+            if(equal(i, j)){
+                //console.log(`a ${left[i]?.value} ${right[j]?.value}`)
+                pushL(i);//merge left and right elements
+                pushR(j);//merge left and right elements
                 i++;
                 j++;
             }
-            else if(lookAhead(r, rowL, j)){// pause l, advance r
-                destL.push(nullRow);
-                destR.push(r[j]);
+            else if(lookAheadR(i, j)){// pause left, advance right
+                //console.log(`b ${left[i]?.value} ${right[j]?.value}`)
+                skipL(i);
+                pushR(j);
                 j++;
             }
-            else {// pause r, advance l
-                destL.push(rowL);
-                destR.push(nullRow);
+            else if(lookAheadL(i, j)){// pause right, advance left
+                //console.log(`c ${left[i]?.value} ${right[j]?.value}`)
+                pushL(i);;
+                skipR(j);
                 i++;
+            }
+            else if(similar(i, j)){
+                //console.log(`d ${left[i]?.value} ${right[j]?.value}`)
+                pushL(i);//merge left and right elements
+                pushR(j);//merge left and right elements
+                i++;
+                j++;
+            }
+            else{
+                //console.log(`e ${left[i]?.value} ${right[j]?.value}`)
+                pushErrL(i);//merge left and right elements
+                pushErrR(j);//merge left and right elements
+                i++;
+                j++;
             }
         }
 
-        while (j < r.length){// add any remaining r
-            destL.push(nullRow);
-            destR.push(r[j]);
+        while (i < left.length || j < right.length){// add any remaining r
+            pushErrL(i);
+            pushErrR(j);
+            i++;
             j++;
         }
         
@@ -180,7 +246,7 @@ const DiffGen = (() => {
     };
 
     return {
-        gen: (diffTokens) => gen(diffTokens)
+        gen: (diffRows) => gen(diffRows)
     };
 })();
 
@@ -322,6 +388,12 @@ const DiffState = (() => {// for diff.html state
             DualFormatter.getFormatter(1).appendWarn(diff1, "Add content in JSONFormatter and refresh this page");
         }
     };
+    
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        initDiffFromStorage();
+      }
+    });
     
     return {
         haveState: () => !!state.stack.length,
