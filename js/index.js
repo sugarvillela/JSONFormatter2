@@ -1,5 +1,7 @@
 /* global testData, TokenGen */
 
+const DEBOUNCE = 250;
+
 const DomProxy = (() => {// for index.html dom access
     const getOrigTextValue = () => {
         return document.getElementById('origText').value;
@@ -20,9 +22,6 @@ const DomProxy = (() => {// for index.html dom access
         document.getElementById("pointerPos").innerHTML = 
                 stack.length? `${pointer+1}/${stack.length}` : 
                 "";
-    };
-    const renderHideButton = (hide) => {
-        document.getElementById("buttonHide").value = (hide)? "+":"-";
     };
     const renderPowerButton = (powerOn) => {
         const b = document.getElementById("buttonPower");
@@ -56,8 +55,11 @@ const DomProxy = (() => {// for index.html dom access
             document.removeEventListener("click", clearOnOutClick, false);
         }
     };
-    const hideWindow = (hide) => {
-        document.getElementById("origText").style.maxHeight = (hide)? "20px":"500px";
+    const setWindowSize = (windowSize) => {
+        const height = ["1", "8", "30"];
+        const buttonText = ["+", "+", "-"]; 
+        document.getElementById("origText").rows = height[windowSize];
+        document.getElementById("buttonWinSize").value = buttonText[windowSize];
     };
     /*private*/ const toClipboard = (text) => {
         let temp = document.createElement("textarea");
@@ -98,10 +100,9 @@ const DomProxy = (() => {// for index.html dom access
         clearFields: () => clearFields(),
         renderObjSize: (newCount) => renderObjSize(newCount),
         renderState: (state) => renderState(state),
-        renderHideButton: (hide) => renderHideButton(hide),
         renderPowerButton: (powerOn) => renderPowerButton(powerOn),
         renderSaveButton: (newState) => renderSaveButton(newState),
-        hideWindow: (hide) => hideWindow(hide),
+        setWindowSize: (hide) => setWindowSize(hide),
         origToClipboard: () => origToClipboard(),
         escapedToClipboard: () => escapedToClipboard(),
         formattedToClipboard: () => formattedToClipboard(),
@@ -110,14 +111,13 @@ const DomProxy = (() => {// for index.html dom access
 })();
 
 const Flags = (() => {// for index.html button states
-    let hideWindow = false;
+    let windowSize = 1;
     let powerOn = true;
     let confirmSave = false;
 
     const toggleHide = () => {
-        hideWindow = !hideWindow;
-        DomProxy.renderHideButton(hideWindow);
-        DomProxy.hideWindow(hideWindow);
+        windowSize = (windowSize + 1) % 3;
+        DomProxy.setWindowSize(windowSize);
     };
     const togglePowerButton = () => {
         powerOn = !powerOn;
@@ -204,9 +204,9 @@ const AppState = (() => {// for index.html state
     };
     
     const initFromStorage = () => {
-        //console.log("init a")
         let {pointer, stack} = Storage.getState();
         let value;
+        
         if(stack.length){
             pointer = Math.min(pointer, stack.length - 1);
             value = stack[pointer];
@@ -241,7 +241,7 @@ const AppState = (() => {// for index.html state
         haveState: () => !!state.stack.length,
         initIndexFromStorage: () => initIndexFromStorage(),
         clearState: () => clearState(),
-        newDiff: () => StorageDiff.saveState(state)
+        newDiff: () => Storage.saveState(state)
     };
 })();
 
@@ -280,7 +280,7 @@ const Parser = (() => {
 
         return () => {
             clearTimeout(timeout);
-            timeout = setTimeout(parse, 250);
+            timeout = setTimeout(parse, DEBOUNCE);
         };
     })();
     
@@ -310,12 +310,13 @@ const togglePowerButton = () => {
 };
 
 const slideFormatted = () => {
-    let formattedString = TokenSource.getTokens().map(
-        t => t.formatted
-    ).join("");
-
-    DomProxy.setOrigTextValue(formattedString);
-    Parser.parse();
+    if(TokenSource.haveTokens()){
+        let formatted = PlainTextFormatter.formattedToArray(
+            TokenSource.getTokens()
+        );
+        DomProxy.setOrigTextValue(formatted.join(""));
+        Parser.parse();
+    }
 };
 
 const stateSave = () => {
@@ -407,7 +408,7 @@ DIFF
 {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":true,"onclick":"doIt()"},{"value":-00033.6,"onclick":"OpenDoc()"},{"value":false,"onclick":"CloseDoc()"}]}}}
 
 TEST DATA SHORT:
-    {"fields":[1,2,3],"thing1":{"innerThing":23},"thing2":"mopey"}
+    {"list of numbers":[1,2,3],anObject:{"some key":"some value"},"an empty object":{}, anEmptyArray:[]}
 
 TEST DATA LONG:
     {"menu": {"id": "file","value": "File","popup": {"menuitem": [{"value": "New", 
@@ -415,20 +416,25 @@ TEST DATA LONG:
     "Close", "onclick": "CloseDoc()"} ]}}}
 
 ESCAPED
-    {\"fields\":[1,2,3],\"thing1\":{\"innerThing\":23},\"thing2\":\"mopey\"}
+    {\"this\":[],\"string\":{\"has\":10},\"escaped\":\"quotes\"}
 
 UNNECESSARY QUOTES
-    "{"fields":[1,2,3],"thing1":{"innerThing":23},"thing2":"mopey"}";
+    "{"surrounded":[1,2,3],"by":{"unnecessary":23},"quotes":"again"}";
 
 ESCAPED WITH UNNECESSARY QUOTES
-    "{\"fields\":[1,2,3],\"thing1\":{\"innerThing\":23},\"thing2\":\"mopey\"}";
+    "{\"surrounded\":[1,2,3],\"by\":{\"unnecessary\":23},\"quotes\":\"again\"}"
+
+PASTED FROM A STRING VARIABLE
+    String myString = "{\"surrounded\":[1,2,3],\"by\":{\"unnecessary\":23},\"quotes\":\"again\"}";
 
 TAB AND NEWLINE (Due to HTML, multi-space only shows up when format copied to clipboard)
     {a:		b,c    :d 
     , e: "in	quotes 		tabs"}
 
 BOOLEAN, NUMBER, UNDEFINED, NULL
-    {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},{"value":true,"onclick":"CloseDoc()"}]}}}
+    {"anObject":{"someKey":"someValue","a bool value":true,"an inner object":
+    {"an inner array":[{"another bool":false,"what to do about undefined?"
+    :undefined},{"a number":-00033.60000,"what to do about null?":null}]}}}
 
 DATES
     {date:"2025-01-05T02:30:14.321Z",date2:2024-01-04T02:30:14Z,date3:2025-01-05,text:someText}
