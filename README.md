@@ -38,8 +38,7 @@ Note: JSON Formatter does not support nested escaped quotes, as in "He said, \\"
 
 ### Storage:
 * Store any number of JSON items.
-* To save time, don't name stored items. Just keep them in the order they were stored.
-* Arrange storage in a stack-like structure.
+* Don't name stored items. Keep them in a stack-like structure.
   * Provide push, pop, top, and front/back navigation controls.
 * Display storage size, along with current display position. 
 * Use the browser's localStorage for persistence beyond page refresh.
@@ -49,7 +48,7 @@ Note: JSON Formatter does not support nested escaped quotes, as in "He said, \\"
 * Copy formatted output text to the clipboard.
 * Copy the original input text to the clipboard with escape symbols added before quotes.
 * Send contents of storage to a difference engine.
-  * Enabled when storage has at least two items.
+  * Enable the button when storage has at least two items.
 
 ### Difference engine:
 * Generate diff view in a new tab.
@@ -122,7 +121,7 @@ Descriptions left to right:
   * Useful when your outside text editor does not auto-escape quotes.
 * "Diff Items in Stack" ( &nearr;Diff ):
   * Opens a new tab for diff display
-  * Send contents of storage to a difference engine (enabled when storage has at least two items).
+  * Send contents of storage to a new diff tab (enabled when storage has at least two items).
 
 ## How to use JSON Diff
 * JSON Diff opens in a new tab next to JSON Formatter.
@@ -202,8 +201,3 @@ Push these values into storage and click "Diff"
     {"firstName":"Bill","lastName":"Burns","age":62,"dob":"1958:07:04",favoriteColor:blue,favoriteMusic:opera,"children":["Billy","Bueford","Bart","Benji"],"jobs":
     ["computerscientist","musicproducer","respiratorytherapist"]}
 
-    {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},
-    {"value":true,"onclick":"CloseDoc()"}]}}}
-
-   {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":true,"onclick":"doIt()"},{"value":-00033.6,"onclick":"OpenDoc()"},
-   {"value":false,"onclick":"CloseDoc()"}]}}}
