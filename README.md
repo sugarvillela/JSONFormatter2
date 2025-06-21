@@ -181,11 +181,16 @@ Paste these JSON samples into JSON Formatter to demonstrate how it handles vario
 #### JAVA BSON DOCUMENT IN ARRAY
     [a, b, Document{{name=John Doe, age=30, city=New York}},d]
 
+#### TWO DOCUMENTS BACK TO BACK IN ARRAY
+
+    [Document{{name=John Doe, age=30, city=New York}},Document{{name=Jane Doo, age=35, city=LosAngeles}}]
+
 #### JAVA TOSTRING NOTATION IN ARRAY
     [a, b, ClassName(key1=value1, key2=value2, key3="keep the = sign"), d]
 
-#### IGNORE JAVA MAP-LIKE MISTAKE
-    [objectName{key1:value1, key2:value2, key3:"keep the = sign"}]
+#### TWO JAVA TOSTRING IN ARRAY
+
+    [ClassName(key1=value1, key2=value2, key3=value3), ClassName2(key4=value4, key5=value5, key6=value6)]
 
 #### DIFF
 Push these values into storage and click "Diff"
