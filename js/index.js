@@ -240,8 +240,7 @@ const AppState = (() => {// for index.html state
         pop: () => pop(),
         haveState: () => !!state.stack.length,
         initIndexFromStorage: () => initIndexFromStorage(),
-        clearState: () => clearState(),
-        newDiff: () => Storage.saveState(state)
+        clearState: () => clearState()
     };
 })();
 
@@ -252,7 +251,9 @@ HtmlFormatter.setTokenSource(TokenSource);
 
 const Parser = (() => {
     const parse = () => {
-        const origText = DomProxy.getOrigTextValue();
+        // Trim this to remove any unknown characters from front and back
+        // Solves gitHub paste from readme problem
+        const origText = DomProxy.getOrigTextValue()?.trim();
         
         if(origText?.length){
             let text = PreParser.preParse(origText);
@@ -393,7 +394,6 @@ const onTextChange = () => {
 };
 
 const newDiff = () => {
-    AppState.newDiff();
     window.open("diff.html", '_blank');
 };
 
@@ -417,6 +417,7 @@ TEST DATA LONG:
 
 ESCAPED
     {\"this\":[],\"string\":{\"has\":10},\"escaped\":\"quotes\"}
+    {\"this\":[],\"string\":{\"has\":10},\"escaped\":\"quotes\"}
 
 UNNECESSARY QUOTES
     "{"surrounded":[1,2,3],"by":{"unnecessary":23},"quotes":"again"}";
@@ -431,13 +432,12 @@ TAB AND NEWLINE (Due to HTML, multi-space only shows up when format copied to cl
     {a:		b,c    :d 
     , e: "in	quotes 		tabs"}
 
-BOOLEAN, NUMBER, UNDEFINED, NULL
+BOOLEAN, NUMBER, DATES, UNDEFINED, NULL
     {"anObject":{"someKey":"someValue","a bool value":true,"an inner object":
-    {"an inner array":[{"another bool":false,"what to do about undefined?"
-    :undefined},{"a number":-00033.60000,"what to do about null?":null}]}}}
-
-DATES
-    {date:"2025-01-05T02:30:14.321Z",date2:2024-01-04T02:30:14Z,date3:2025-01-05,text:someText}
+    {"an inner array":[{"another bool":false,"what to do about undefined?":undefined},
+    {"a string":"spaces in quotes","a number":-00033.60000,"what to do about null?":null},
+    {"date":2025-01-05T02:30:14.321Z,"date2":10/15/2020,"date3":2025-01-05,"text":
+    someText,"date4":2025-01-05}]}}}
 
 INNER QUOTES NOT SUPPORTED!
     ["He said, \"Hello!\""]
@@ -451,8 +451,12 @@ JAVA BSON DOCUMENT
 JAVA BSON DOCUMENT IN ARRAY
     [a, b, Document{{name=John Doe, age=30, city=New York}},d]
 
+    [Document{{name=John Doe, age=30, city=New York}},Document{{name=Jane Doo, age=35, city=LosAngeles}}]
+
 JAVA TOSTRING NOTATION IN ARRAY
     [a, b, ClassName(key1=value1, key2=value2, key3="keep the = sign"), d]
+
+    [ClassName(key1=value1, key2=value2, key3=value3), ClassName2(key4=value4, key5=value5, key6=value6)]
 
 IGNORE JAVA MAP-LIKE MISTAKE
     [objectName{key1:value1, key2:value2, key3:"keep the = sign"}]
