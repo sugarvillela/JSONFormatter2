@@ -15,7 +15,6 @@ const Storage = (() => {
     };
     /* private */ const getPointer = () => {
         const item = localStorage.getItem(POINTER_KEY);
-        //console.log("init b", item)
         return item ? JSON.parse(item) : [0, 0];
     };
     
@@ -36,7 +35,6 @@ const Storage = (() => {
         
         for(let i = 0; i < length; i++){
             const item = localStorage.getItem(`${APP_KEY}${i}`);
-            //console.log("init c", item)
             item && stack.push(item);
         }
         
@@ -112,11 +110,9 @@ const PreParser = (() => {
             else {
                 const match = r3.exec(text);
                 if(match){
-                    console.log(match);
                     const len = match[0].length - 1;
-                    console.log("len", len);
                     const trimFront = text.substring(len);
-                    console.log(trimFront);
+
                     return fix(trimFront);
                 }
             }
@@ -146,14 +142,14 @@ const PreParser = (() => {
     })();
 
     const ObjNotation = (() => {    
-        const objFixes = [
+        const getObjFixes = () => [
             {// java toString notation
                 r1: /[a-zA-Z][a-zA-Z0-9_]*[(][^)]+[)]/g,
                 r2: /^[a-zA-Z][a-zA-Z0-9_]*[(]/g,
                 trim: 1
             },
             {// Bson Document notation
-                r1: /[a-zA-Z][a-zA-Z0-9_]*[{]{2}[^)]+[}]{2}/g,
+                r1: /[a-zA-Z][a-zA-Z0-9_]*[{]{2}[^}]+[}]{2}/g,
                 r2: /^[a-zA-Z][a-zA-Z0-9_]*[{]{2}/g,
                 trim: 2
             }
@@ -173,10 +169,11 @@ const PreParser = (() => {
             }
         };
 
-        const findObjFix = () => {
+        const findObjFix = (objFixes) => {
             for(let i = 0; i < objFixes.length; i++){
+                
                 if(objFixes[i].r1.exec(text)){
-                    objFixes[i].r1.lastIndex = 0;
+                    objFixes[i].r1.lastIndex = 0;// reset the regex
                     return i;
                 }
             }
@@ -207,9 +204,11 @@ const PreParser = (() => {
                 if(shortMatch){
                     tok.push("{" + badText.substring(shortMatch[0].length) + "}");
                 }
+                
+                objFix.r2.lastIndex = 0; // reset the short match
             }
 
-            if(k < text.length - 1){
+            if(k < text.length){
                 tok.push(text.substring(k));
             }
 
@@ -230,7 +229,8 @@ const PreParser = (() => {
                 fixEqualSigns();
 
                 if(!good){
-                    const iFix = findObjFix();
+                    const objFixes = getObjFixes();
+                    const iFix = findObjFix(objFixes);
 
                     if(iFix === -1){
                         good = true;
@@ -251,6 +251,7 @@ const PreParser = (() => {
     
     const preParse = (origText) => {
         warnings = [];
+        
         let text = origText.replaceAll(/[\\]["]/g, '"');
         text = OuterQuotes.fix(text);
         text = WhiteSpace.fix(text);
@@ -262,7 +263,7 @@ const PreParser = (() => {
                 text = fixedObjText;
             }
         }
-        //console.log("preParse", text);
+
         return text;
     };
     
@@ -282,10 +283,10 @@ const TokenGen = (() => {
         [COMMA]:        {opener: 0, closer: 0, key: 0, val: 0, endl: 1, ckEndl: 0, className: "charDelim"},
         [KEY_TEXT]:     {opener: 0, closer: 0, key: 1, val: 0, endl: 0, ckEndl: 1, className: "charKey"},
         [VAL_TEXT]:     {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charValue"},
-        [VAL_ISO]:      {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charValue"},
+        [VAL_ISO]:      {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charDateValue"},
         [VAL_NUM]:      {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charNumVal"},
         [VAL_BOOL]:     {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charBoolVal"},
-        [VAL_UNDEF]:    {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charBoolVal"},
+        [VAL_UNDEF]:    {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "charNullVal"},
         [VAL_DIFF]:     {opener: 0, closer: 0, key: 0, val: 1, endl: 1, ckEndl: 1, className: "diffToken"}
     };
     
@@ -419,7 +420,6 @@ const getHtmlFormatter = (formatDivId) => {
         let isEndline = false;
         let div = document.getElementById(formatDivId);
         div.innerHTML = "";
-        //console.log("drawFormattedHtml", tokens.length);
 
         for (let i = 0; i < tokens.length; i++){
             appendText(div, tokens[i], isEndline);
