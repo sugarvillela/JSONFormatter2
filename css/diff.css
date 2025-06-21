@@ -3,10 +3,8 @@
 }
 
 .diffToken {
-
-    background-color: darksalmon;
+    background-color: lightpink;
     min-width: 0;
     border: none;
     display: inline;
 }
-
