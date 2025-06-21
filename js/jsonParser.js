@@ -160,15 +160,14 @@ const JsonParser = (() => {
             [VAL_NUM, /^-?\d+(\.\d+)?$/, false],
             [VAL_ISO, /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}?([.][0-9]+)?Z?$/, true],
             [VAL_ISO, /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, true],
+            [VAL_ISO, /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(19|20)\d{2}$/, true],
+            [VAL_ISO, /^(0[1-9]|1[0-2])[-](0[1-9]|[12]\d|3[01])[-](19|20)\d{2}$/, true],
             [VAL_UNDEF, /^undefined$/, false],
             [VAL_UNDEF, /^null$/, false],
             [VAL_BOOL, /^(true)|(false)$/, false]
         ];
 
         /* private */ const trimFront = (text) => {
-//            if(EQF.exec(text)){
-//                return text.substring(2);
-//            }
             if(QF.exec(text)){
                 return text.substring(1);
             }
@@ -178,9 +177,6 @@ const JsonParser = (() => {
         };
 
         /* private */ const trimBack = (text) => {
-//            if(EQB.exec(text)){
-//                return text.substring(0, text.length - 2);
-//            }
             if(QB.exec(text)){
                 return text.substring(0, text.length - 1);
             }
@@ -209,6 +205,7 @@ const JsonParser = (() => {
                     if(addQuotes){
                         text = `"${text}"`;
                     }
+                    
                     return [tokType, text];
                 }
             }
