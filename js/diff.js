@@ -319,6 +319,7 @@ const SelectUtil = (() => {
     
     /* private */ const initOne = (index, options, value) => {
         const e = document.getElementById(`select${index}`);
+        e.innerHTML = "";
 
         options.forEach((option, i) => {
             const o = document.createElement('option');
