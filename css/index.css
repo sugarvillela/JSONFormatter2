@@ -53,6 +53,13 @@ body{
     border: none;
     display: inline;
 }
+.charDateValue{
+    color: #60a37a;
+    background-color: inherit;
+    min-width: 0;
+    border: none;
+    display: inline;
+}
 .charNumVal{
     color: #fff700;
     background-color: inherit;
@@ -61,6 +68,13 @@ body{
     display: inline;
 }
 .charBoolVal{
+    color: coral;
+    background-color: inherit;
+    min-width: 0;
+    border: none;
+    display: inline;
+}
+.charNullVal{
     color: #bfa3a3;
     background-color: inherit;
     min-width: 0;
