@@ -201,3 +201,17 @@ Push these values into storage and click "Diff"
     {"firstName":"Bill","lastName":"Burns","age":62,"dob":"1958:07:04",favoriteColor:blue,favoriteMusic:opera,"children":["Billy","Bueford","Bart","Benji"],"jobs":
     ["computerscientist","musicproducer","respiratorytherapist"]}
 
+    [1,2,3,4,5,6,7,8,9,10,11,12,13,14,25,26,27,28,29,20,21,22,23,24,25,26,27,28,29,30,1,2,3,4,5,6,7,8,9,40,41,42,43,44,45,46,47,48,49,50]
+
+    [1,2,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50]
+
+    {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":false,"onclick":"doIt()"},{"value":-00033.60000,"onclick":"OpenDoc()"},  {"value":true,"onclick":"CloseDoc()"}]}}}
+
+    {thing:{"id":"file","value":"File","popup":{"menuitem":[{"value":true,"onclick":"doIt()"},{"value":-00033.6,"onclick":"OpenDoc()"},{"value":false,"onclick":"CloseDoc()"}]}}}
+
+    {"anObject":{"someKey":"someValue","a bool value":true,"an inner object":{"an inner array":[{"another bool":false,"what to do about undefined?":undefined},{"date":"2025-01-05T02:30:14.321Z","date2":"10/15/2020","date3":"2025-01-05","text":"someText","date4":"2025-01-05"},{"a string":"spacesNotInQuotes","a number":-17,"what to do about null?":null},{"date":"2020-01-05T02:30:14.321Z","date2":"01/05/2020","date3":"2025-01-05","text":"someText","date4":"2025-01-05"},]}}}
+
+    {"anObject":{"someOtherKey":"someOtherValue","a bool value":false,"an inner object":{"an inner array":[{"a bool value":false,"what to do about undefined?":"defined"},{"a string":"spaces in quotes","a number":-00033.60000,"what to do about null?":null},{"date":"2025-01-05T02:30:14.321Z","date2":"10/15/2020","date3":"2025-01-05","text":"someText","date4":"2025-01-05"},{"a string":"spacesNotInQuotes","a number":-17,"what to do about null?":"not null"},{"date":"2020-01-05T02:30:14.321Z","date2":"01/05/2020","date3":"2022-01-05","text":"someOtherValue","date4":"2025-01-05"},]}}}
+
+    
+
