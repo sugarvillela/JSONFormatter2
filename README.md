@@ -1,6 +1,6 @@
 # JSONFormatter2
 JSON Formatter is a software tool for display, cleanup, editing, and difference of JSON and JSON-like text.
-* Useful for quick viewing of obfuscated JSON, such as from debuggers, toString functions and variable definitions.
+* Useful for quick viewing of obfuscated JSON, such as from debuggers, toString() functions, and variable definitions.
 * Also useful for originating test data or other JSON content.
 * Contains customizations for cleaning debug output from Java or other languages (whose output is similar to JSON but not valid JSON).
 * Diff function allows comparison of similar JSON samples.
@@ -9,53 +9,53 @@ JSON Formatter is a software tool for display, cleanup, editing, and difference 
 
 ### Display:
 * "Pretty print" JSON in main display window.
-* Display keys and values in different colors.
+* Displays keys and values in different colors.
 * Strings, numbers, booleans and null/undefined each have their own color.
-* Date (ISO and informal) slightly different color from normal strings.
-* Display total size of the JSON input (number of values AKA leaves).
-* Highlight opening/closing symbols on click.
+* Date (ISO and informal) have slightly different color from normal strings.
+* Displays total size of the JSON input (number of values AKA leaves).
+* Highlights opening/closing symbols on click.
 
 ### Input and auto-cleanup:
 * The parser reads JSON pasted or typed in the main input window (text area).
-* Auto-add quotes to unquoted fields, except for numeric, boolean or null/undefined.
+* Auto-adds quotes to unquoted fields, except for numeric, boolean or null/undefined.
   * Useful for quick typing/editing of JSON text.
   * Note: Unquoted null/undefined may break some 3rd party JSON parsers. You should surround these in quotes when using Formatter output as input to other software.
-* Auto-remove escape symbol before quotes.
+* Auto-removes escape symbol before quotes.
   * Useful for viewing JSON from quoted strings.
-* Auto-remove surrounding quotes from the entire JSON string.
-  * Some debuggers surround strings with extra quotes.
-* Auto-remove leading text where JSON is pasted from a variable declaration, like this...
+* Auto-removes surrounding quotes from the entire JSON string.
+  * Some debuggers surround strings with unnecessary quotes.
+* Auto-removes leading text where JSON is pasted from a variable declaration, like this...
   * String myJson = "{\\"this\\":[],\\"is\\":{\\"a\\":1},\\"variable\\":\\"declaration\\"}";
-* Auto-tranform some Java toString formats.
-  * Supports Java map, Bson Document, Lombok toString and similar.
-* Auto-remove spaces, tabs and newlines, unless surrounded by quotes.
+* Automatically transforms some Java toString() formats.
+  * Supports Java Map, Bson Document, Lombok toString(), and similar.
+* Auto-removes spaces, tabs, and newlines, unless surrounded by quotes.
 
 Note: JSON Formatter does not support nested escaped quotes, as in "He said, \\"Hello.\\"".  Instead, it removes all escape symbols.
 
 ### Parsing:
-* Update parsing on-key-up or paste.
-* Display errors on invalid JSON input.
+* Parses the input on-key-up or paste.
+* Displays errors on invalid JSON input.
 
 ### Storage:
-* Store any number of JSON items.
-* Don't name stored items. Keep them in a stack-like structure.
-  * Provide push, pop, top, and front/back navigation controls.
-* Display storage size, along with current display position. 
-* Use the browser's localStorage for persistence beyond page refresh.
+* Stores any number of JSON items.
+* Keeps them in a stack-like structure, organized by position, not by name.
+  * Provides push, pop, top, and front/back navigation controls.
+* Displays storage size, along with current display position. 
+* Uses the browser's localStorage for persistence beyond page refresh.
 
 ### Output:
-* Copy the original input text to the clipboard.
-* Copy formatted output text to the clipboard.
-* Copy the original input text to the clipboard with escape symbols added before quotes.
-* Send contents of storage to a difference engine.
-  * Enable the button when storage has at least two items.
+* Copies the original input text to the clipboard.
+* Copies formatted output text to the clipboard.
+* Copies the original input text to the clipboard with escape symbols added before quotes.
+* Sends contents of storage to a difference engine.
+  * Enables the button when storage has at least two items.
 
 ### Difference engine:
-* Generate diff view in a new tab.
-* Show diffs in side-by-side display.
-* Allow the user to select from any JSON items in storage.
-* Auto-update diff tab when main tab storage is changed.
-* Warn the user when storage contains fewer than two items for diff.
+* Generates Diff view in a new tab.
+* Shows diffs in side-by-side display.
+* Allows the user to select from any JSON items in storage.
+* Auto-updates the Diff tab when the main tab's storage is changed.
+* Warns the user when storage contains fewer than two items for Diff.
 
 ## How to use the JSON Formatter:
 JSON Formatter has an input window (a text area) and an output window (a read-only div).
