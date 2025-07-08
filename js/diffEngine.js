@@ -423,5 +423,3 @@ const DiffGen = (() => {
         gen: (diffRows, bestAlgo) => gen(diffRows, bestAlgo)
     };
 })();
-
-
